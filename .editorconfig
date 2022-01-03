@@ -1,0 +1,17 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+max_line_length = 128
+tab_width = 4
+
+[*.java]
+ij_java_blank_lines_after_class_header = 1
+ij_java_blank_lines_before_class_end = 1
+ij_java_method_parameters_wrap = on_every_item
+ij_java_method_call_chain_wrap = on_every_item
+ij_java_doc_add_blank_line_after_param_comments = true
