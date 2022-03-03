@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class JavaGenerator extends BaseGenerator {
@@ -37,14 +36,14 @@ public final class JavaGenerator extends BaseGenerator {
      * All java reserved words
      */
     private static final String[] javaReservedWords = new String[]{
-        "abstract", "assert", "boolean", "break", "byte", "case",
-        "catch", "char", "class", "const", "continue", "default",
-        "double", "do", "else", "enum", "extends", "false", "final",
-        "finally", "float", "for", "goto", "if", "implements", "import",
-        "instanceof", "int", "interface", "long", "native", "new",
-        "null", "package", "private", "protected", "public", "return",
-        "short", "static", "strictfp", "super", "switch", "synchronized",
-        "this", "throw", "throws", "transient", "true", "try", "void", "volatile", "while"
+            "abstract", "assert", "boolean", "break", "byte", "case",
+            "catch", "char", "class", "const", "continue", "default",
+            "double", "do", "else", "enum", "extends", "false", "final",
+            "finally", "float", "for", "goto", "if", "implements", "import",
+            "instanceof", "int", "interface", "long", "native", "new",
+            "null", "package", "private", "protected", "public", "return",
+            "short", "static", "strictfp", "super", "switch", "synchronized",
+            "this", "throw", "throws", "transient", "true", "try", "void", "volatile", "while"
     };
 
     /**
@@ -107,13 +106,13 @@ public final class JavaGenerator extends BaseGenerator {
         // Walk resources directory
         SourceDirectorySet resourceDirSet = PluginUtils.getResourcesSourceSet(currentProject);
         List<Path> resourceDirs = resourceDirSet.getSrcDirs()
-            .stream()
-            .map(File::toPath)
-            .collect(Collectors.toList());
+                .stream()
+                .map(File::toPath)
+                .toList();
 
         TypeSpec.Builder classSpec = generateBaseClass();
         CodeBlock.Builder elementsContent = CodeBlock.builder()
-            .add("new $T {\n", String[].class);
+                .add("new $T {\n", String[].class);
 
         // Generate file storage
         for (Path baseDir : resourceDirs) {
@@ -124,33 +123,33 @@ public final class JavaGenerator extends BaseGenerator {
             try (Stream<Path> walker = Files.walk(baseDir)) {
                 // Filter all results
                 walker
-                    .filter(Files::isRegularFile)
-                    .filter(p -> !p.toString().equals(outputJavaFile.toString()))
-                    .forEachOrdered(p -> {
-                        insertEachPathContent(baseDir, p, elementsContent);
-                        insertEachPathConstant(baseDir, p, classSpec);
-                    });
+                        .filter(Files::isRegularFile)
+                        .filter(p -> !p.toString().equals(outputJavaFile.toString()))
+                        .forEachOrdered(p -> {
+                            insertEachPathContent(baseDir, p, elementsContent);
+                            insertEachPathConstant(baseDir, p, classSpec);
+                        });
             }
         }
 
         // Generate magic array
         elementsContent.add("}");
         FieldSpec.Builder arrayContentSpec = FieldSpec.builder(String[].class, magicArrayName)
-            .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-            .initializer(elementsContent.build());
+                .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+                .initializer(elementsContent.build());
         classSpec.addField(arrayContentSpec.build());
 
         // Attach methods
         classSpec
-            .addMethod(getResourceMethod(classLoaderName))
-            .addMethod(getResourceAsStreamMethod(classLoaderName))
-            .addMethod(getRegisteredResourceMethod())
-            .addMethod(getRegisteredResourceAsStreamMethod());
+                .addMethod(getResourceMethod(classLoaderName))
+                .addMethod(getResourceAsStreamMethod(classLoaderName))
+                .addMethod(getRegisteredResourceMethod())
+                .addMethod(getRegisteredResourceAsStreamMethod());
 
         // Generate java file
         JavaFile outFile = JavaFile.builder(pluginOptions.getTargetPackage(), classSpec.build())
-            .indent("\t")
-            .build();
+                .indent("\t")
+                .build();
         // Write result
         outFile.writeTo(outputJavaFile);
     }
@@ -168,8 +167,8 @@ public final class JavaGenerator extends BaseGenerator {
         // Generate relative path
         Path relative = base.relativize(p);
         String relativeString = relative.toString()
-            .replace("\\", "/")
-            .replace("\\/", "/");
+                .replace("\\", "/")
+                .replace("\\/", "/");
         // Insert element to builder
         String expression = (resourceCounter + 1) % 4 == 0 ? "$S, \n" : "$S, ";
         builder.add(expression, relativeString);
@@ -183,14 +182,16 @@ public final class JavaGenerator extends BaseGenerator {
         // Generate relative path
         Path relative = base.relativize(p);
         String relativeLocation = relative.toString()
-            .replace("\\", "/")
-            .replace("\\/", "/");
+                .replace("\\", "/")
+                .replace("\\/", "/");
         String constantName = relative.toString()
-            .replace(".", "_")
-            .replace("\\", "_")
-            .replace("/", "_")
-            .replaceAll("\\s", "_")
-            .toLowerCase(Locale.ROOT);
+                .replace(".", "_")
+                .replace("\\", "_")
+                .replace("/", "_")
+                .replaceAll("-", "__")
+                .replaceAll("\\s", "_")
+                .toLowerCase(Locale.ROOT);
+
 
         if (startConstantPattern.matcher(constantName).find())
             constantName = "$" + constantName;
@@ -205,9 +206,9 @@ public final class JavaGenerator extends BaseGenerator {
 
         // Generate constant content
         FieldSpec.Builder constant = FieldSpec.builder(int.class, constantName)
-            .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-            .addJavadoc("$L", relativeLocation)
-            .initializer("$L", resourceCounter++);
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                .addJavadoc("$L", relativeLocation)
+                .initializer("$L", resourceCounter++);
         // Insert constant to type spec
         builder.addField(constant.build());
     }
@@ -220,19 +221,19 @@ public final class JavaGenerator extends BaseGenerator {
     private TypeSpec.@NotNull Builder generateBaseClass() {
         // Generate base class name
         return TypeSpec
-            .classBuilder(PluginUtils.OUTPUT_FILE_NAME)
-            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-            .addJavadoc(CodeBlock.builder()
-                .add("Do not edit this file.\n")
-                .add("This file is generated automatically and if it is edited it may stop working correctly.")
-                .build())
-            .addField(
-                FieldSpec.builder(ClassLoader.class, classLoaderName)
-                    .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                    .addJavadoc("Current application context loader")
-                    .initializer("$T.getSystemClassLoader()", ClassLoader.class)
-                    .build()
-            );
+                .classBuilder(PluginUtils.OUTPUT_FILE_NAME)
+                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .addJavadoc(CodeBlock.builder()
+                        .add("Do not edit this file.\n")
+                        .add("This file is generated automatically and if it is edited it may stop working correctly.")
+                        .build())
+                .addField(
+                        FieldSpec.builder(ClassLoader.class, classLoaderName)
+                                .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+                                .addJavadoc("Current application context loader")
+                                .initializer("$T.getSystemClassLoader()", ClassLoader.class)
+                                .build()
+                );
     }
 
     /**
@@ -244,8 +245,8 @@ public final class JavaGenerator extends BaseGenerator {
         // Generate builders
         ParameterSpec.Builder resourceIdParam = ParameterSpec.builder(int.class, "resourceId");
         MethodSpec.Builder builder = MethodSpec.methodBuilder("getRegisteredResource")
-            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-            .returns(URL.class);
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(URL.class);
         // Check if configuration contains injected dependencies
         if (pluginOptions.getInjectDependencies()) {
             builder.addAnnotation(NotNull.class);
@@ -254,23 +255,23 @@ public final class JavaGenerator extends BaseGenerator {
         builder.addParameter(resourceIdParam.build());
         // Add logic
         builder
-            .addStatement("resourceId = $T.abs(resourceId)", Math.class)
-            .beginControlFlow("if (resourceId > $L.length) ", magicArrayName)
-            .addStatement(
-                "throw new $T($S + $L + $S)",
-                IndexOutOfBoundsException.class,
-                "Resource ",
-                "resourceId",
-                " not found")
-            .endControlFlow()
-            .addStatement("$T res = getResource($L[resourceId])", URL.class, magicArrayName)
-            .addStatement(
-                "$T.requireNonNull(res, $S + $L[resourceId] + $S)",
-                Objects.class,
-                "Resource ",
-                magicArrayName,
-                " not found")
-            .addStatement("return res");
+                .addStatement("resourceId = $T.abs(resourceId)", Math.class)
+                .beginControlFlow("if (resourceId > $L.length) ", magicArrayName)
+                .addStatement(
+                        "throw new $T($S + $L + $S)",
+                        IndexOutOfBoundsException.class,
+                        "Resource ",
+                        "resourceId",
+                        " not found")
+                .endControlFlow()
+                .addStatement("$T res = getResource($L[resourceId])", URL.class, magicArrayName)
+                .addStatement(
+                        "$T.requireNonNull(res, $S + $L[resourceId] + $S)",
+                        Objects.class,
+                        "Resource ",
+                        magicArrayName,
+                        " not found")
+                .addStatement("return res");
         //Generate methodSpec
         return builder.build();
     }
@@ -284,8 +285,8 @@ public final class JavaGenerator extends BaseGenerator {
         // Generate builders
         ParameterSpec.Builder resourceIdParam = ParameterSpec.builder(int.class, "resourceId");
         MethodSpec.Builder builder = MethodSpec.methodBuilder("getRegisteredResourceAsStream")
-            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-            .returns(InputStream.class);
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(InputStream.class);
         // Check if configuration contains injected dependencies
         if (pluginOptions.getInjectDependencies()) {
             builder.addAnnotation(NotNull.class);
@@ -294,23 +295,23 @@ public final class JavaGenerator extends BaseGenerator {
         builder.addParameter(resourceIdParam.build());
         // Add logic
         builder
-            .addStatement("resourceId = $T.abs(resourceId)", Math.class)
-            .beginControlFlow("if (resourceId > $L.length) ", magicArrayName)
-            .addStatement(
-                "throw new $T($S + $L + $S)",
-                IndexOutOfBoundsException.class,
-                "Resource ",
-                "resourceId",
-                " not found")
-            .endControlFlow()
-            .addStatement("$T res = getResourceAsStream($L[resourceId])", InputStream.class, magicArrayName)
-            .addStatement(
-                "$T.requireNonNull(res, $S + $L[resourceId] + $S)",
-                Objects.class,
-                "Resource ",
-                magicArrayName,
-                " not found")
-            .addStatement("return res");
+                .addStatement("resourceId = $T.abs(resourceId)", Math.class)
+                .beginControlFlow("if (resourceId > $L.length) ", magicArrayName)
+                .addStatement(
+                        "throw new $T($S + $L + $S)",
+                        IndexOutOfBoundsException.class,
+                        "Resource ",
+                        "resourceId",
+                        " not found")
+                .endControlFlow()
+                .addStatement("$T res = getResourceAsStream($L[resourceId])", InputStream.class, magicArrayName)
+                .addStatement(
+                        "$T.requireNonNull(res, $S + $L[resourceId] + $S)",
+                        Objects.class,
+                        "Resource ",
+                        magicArrayName,
+                        " not found")
+                .addStatement("return res");
         //Generate methodSpec
         return builder.build();
     }

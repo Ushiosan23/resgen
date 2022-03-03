@@ -22,7 +22,7 @@ buildscript {
     extra.set("scm.connection.ssh", "scm:git:ssh:github.com/Ushiosan23/resgen.git")
     extra.set("scm.url", "${extra["maven.artifactUrl"]}/tree/main")
 
-    extra.set("project.plugin.version", "0.0.1")
+    extra.set("project.plugin.version", "0.0.2")
     extra.set("project.plugin.group", "io.github.ushiosan23")
     extra.set("project.plugin.id", "${extra["project.plugin.group"]}.resgen")
     extra.set("project.plugin.entry", "${extra["project.plugin.id"]}.ResourceGeneratorEntry")
